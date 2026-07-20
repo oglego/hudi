@@ -99,6 +99,22 @@ public class HoodieIndexConfig extends HoodieConfig {
           + "value is used in defining the actual parallelism. If the indexing stage is slow "
           + "due to the limited parallelism, you can increase this to tune the performance.");
 
+  public static final ConfigProperty<String> GLOBAL_BLOOM_INDEX_PARTITION_PRUNING_ENABLED = ConfigProperty
+      .key("hoodie.global.bloom.index.partition.pruning.enable")
+      .defaultValue("false")
+      .markAdvanced()
+      .withDocumentation("Only applies if index type is GLOBAL_BLOOM. "
+          + "When true, limits the number of partitions evaluated by the Global Bloom Index to optimize upsert performance. "
+          + "Note that updates to records residing in pruned partitions will bypass the uniqueness check and be written as new inserts.");
+
+  public static final ConfigProperty<String> GLOBAL_BLOOM_INDEX_PRUNED_PARTITION_COUNT = ConfigProperty
+      .key("hoodie.global.bloom.index.partition.pruning.count")
+      .defaultValue("-1")
+      .markAdvanced()
+      .withDocumentation("Only applies if index type is GLOBAL_BLOOM and partition pruning is enabled. "
+          + "The maximum number of recent partitions to evaluate. Partitions are sorted lexicographically "
+          + "in descending order. A value of -1 disables the limit (evaluates all partitions).");
+
   public static final ConfigProperty<String> BLOOM_INDEX_PRUNE_BY_RANGES = ConfigProperty
       .key("hoodie.bloom.index.prune.by.ranges")
       .defaultValue("true")
@@ -610,6 +626,16 @@ public class HoodieIndexConfig extends HoodieConfig {
 
     public Builder bloomIndexParallelism(int parallelism) {
       hoodieIndexConfig.setValue(BLOOM_INDEX_PARALLELISM, String.valueOf(parallelism));
+      return this;
+    }
+
+    public Builder globalBloomIndexPartitionPruningEnabled(boolean prunePartitions) {
+      hoodieIndexConfig.setValue(GLOBAL_BLOOM_INDEX_PARTITION_PRUNING_ENABLED, String.valueOf(prunePartitions));
+      return this;
+    }
+
+    public Builder globalBloomIndexPrunedPartitionCount(int partitionCount) {
+      hoodieIndexConfig.setValue(GLOBAL_BLOOM_INDEX_PRUNED_PARTITION_COUNT, String.valueOf(partitionCount));
       return this;
     }
 

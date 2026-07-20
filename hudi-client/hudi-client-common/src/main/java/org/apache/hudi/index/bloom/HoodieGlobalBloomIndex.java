@@ -54,10 +54,30 @@ public class HoodieGlobalBloomIndex extends HoodieBloomIndex {
    * Load all involved files as <Partition, filename> pairs from all partitions in the table.
    */
   @Override
+  @SuppressWarnings("rawtypes")
   List<Pair<String, BloomIndexFileInfo>> loadColumnRangesFromFiles(List<String> partitions, final HoodieEngineContext context,
                                                                    final HoodieTable hoodieTable) {
     HoodieTableMetaClient metaClient = hoodieTable.getMetaClient();
     List<String> allPartitionPaths = FSUtils.getAllPartitionPaths(context, metaClient, config.getMetadataConfig());
+    
+    // Query properties directly from HoodieWriteConfig using the property keys
+    boolean pruningEnabled = config.getBoolean(org.apache.hudi.config.HoodieIndexConfig.GLOBAL_BLOOM_INDEX_PARTITION_PRUNING_ENABLED);
+    
+    if (pruningEnabled && !allPartitionPaths.isEmpty()) {
+      int maxPartitionsToKeep = config.getInt(org.apache.hudi.config.HoodieIndexConfig.GLOBAL_BLOOM_INDEX_PRUNED_PARTITION_COUNT);
+      
+      // A positive count indicates a valid pruning window size
+      if (maxPartitionsToKeep > 0) {
+        // Sort descending lexicographically to prioritize newer partitions (e.g., YYYY/MM/DD strings)
+        allPartitionPaths.sort(java.util.Comparator.reverseOrder());
+        
+        // Limit the paths to the configured count
+        allPartitionPaths = allPartitionPaths.stream()
+            .limit(maxPartitionsToKeep)
+            .collect(java.util.stream.Collectors.toList());
+      }
+    }
+
     return super.loadColumnRangesFromFiles(allPartitionPaths, context, hoodieTable);
   }
 
